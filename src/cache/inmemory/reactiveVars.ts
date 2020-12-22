@@ -26,7 +26,6 @@ function consumeAndIterate<T>(set: Set<T>, callback: (item: T) => any) {
   if (set.size) {
     const items: T[] = [];
     set.forEach(item => items.push(item));
-    set.clear();
     items.forEach(callback);
   }
 }
@@ -72,11 +71,22 @@ export function makeVar<T>(value: T): ReactiveVar<T> {
   };
 
   rv.onNextChange = listener => {
-    listeners.add(listener);
+    listeners.add((...props) => {
+      listener(...props)
+      listeners.delete(listener);
+    });
     return () => {
       listeners.delete(listener);
     };
   };
+  
+  rv.onChange = listener => {
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener);
+    };
+  };
+
 
   const attach = rv.attachCache = cache => {
     caches.add(cache);
